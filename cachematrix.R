@@ -1,24 +1,27 @@
-## Two functions for creating and using matrix enclosure object with
-## cache-stored matrix inversion result
+## Two functions for creating and using matrix inversion cache
 
-## returns list with fields: 
-##    "matrix" - main work matrix
-##    "inversion" - for storing matrix inversion cache  
+## initializes matrix invertion cache 
+## returns either inverted matrix, or NA if matrix can't be inverted: 
 
 makeCacheMatrix <- function(x = matrix()) {
-  Inversion = NA
-  return (list(matrix=x, inversion=Inversion))
   
+  inv_result<-tryCatch({solve(x)},
+                       error = function (err){print("non-invertible matrix!"); return(NA)})
+  if (class(inv_result)!="matrix") {
+    return (NA)}
+  else {
+    return (inv_result) 
+  }
 }
 
 
 ## Return a matrix, that is the inverse of 'matrix_object'
-## Stores inverse value in matrix object "inversion" field
+## Stores inverse value in cache_object
 ## Tests if currently stored inverse is correct by calculating 
 ## determinant of matrix x inverse multiplication result
 ## 
 
-cacheSolve <- function(matrix_object, ...) {
+cacheSolve <- function(matrix_object, cache_object) {
   CorrectInversion <- function (m1, m2) {
     if (!(is.matrix(m1) && is.matrix(m2) && dim(m1) == dim(m2))) {
       return (FALSE);
@@ -26,18 +29,16 @@ cacheSolve <- function(matrix_object, ...) {
     return (det(m1 %*% m2) == 1);
   }
   
-  if ((!is.na(matrix_object[["inversion"]]))
-      && CorrectInversion(matrix_object[["matrix"]],
-                          matrix_object[["inversion"]])) {
-    return (matrix_object[["inversion"]])
+  if ((!is.na(cache_object)
+      && CorrectInversion(matrix_object,
+                          cache_object))) {
+    return (cache_object)
   } else {
-    inv_result<-tryCatch({solve(matrix_object[["matrix"]])},
+    inv_result<-tryCatch({solve(matrix_object)},
                          error = function (err){print("non-invertible matrix!"); return(NA)})
     if (class(inv_result)!="matrix") {return (NA)}
     
-    new_object <- list(matrix=matrix_object[["matrix"]], inversion=NA)
-    new_object[["inversion"]] <- inv_result
-    eval.parent(substitute(matrix_object<-new_object))
-    return (new_object[["inversion"]])
+    eval.parent(substitute(cache_object<-inv_result))
+    return (inv_result)
   }
 }
