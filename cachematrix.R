@@ -1,27 +1,28 @@
 ## Two functions for creating and using matrix inversion cache
 
-## initializes matrix invertion cache 
-## returns either inverted matrix, or NA if matrix can't be inverted: 
+## initializes matrix enclosure object
 
 makeCacheMatrix <- function(x = matrix()) {
+  inv_result<- NA
   
-  inv_result<-tryCatch({solve(x)},
-                       error = function (err){print("non-invertible matrix!"); return(NA)})
-  if (class(inv_result)!="matrix") {
-    return (NA)}
-  else {
-    return (inv_result) 
+  set <- function(mvalue) {
+    x<<-mvalue
+    inv_result<<- NA
   }
+  get <- function() {return (x)}
+  setinverse <- function(value) inv_result <<- value
+  getinverse <- function() inv_result
+  list(set=set, get=get, setinverse = setinverse, getinverse = getinverse)
+  
 }
 
 
-## Return a matrix, that is the inverse of 'matrix_object'
-## Stores inverse value in cache_object
+## Return a matrix, that is the inverse of a value stored in 'matrix_object'
 ## Tests if currently stored inverse is correct by calculating 
 ## determinant of matrix x inverse multiplication result
 ## 
 
-cacheSolve <- function(matrix_object, cache_object) {
+cacheSolve <- function(matrix_object, ...) {
   CorrectInversion <- function (m1, m2) {
     if (!(is.matrix(m1) && is.matrix(m2) && dim(m1) == dim(m2))) {
       return (FALSE);
@@ -29,16 +30,18 @@ cacheSolve <- function(matrix_object, cache_object) {
     return (det(m1 %*% m2) == 1);
   }
   
-  if ((!is.na(cache_object)
-      && CorrectInversion(matrix_object,
-                          cache_object))) {
-    return (cache_object)
+  inv_result <- matrix_object$getinverse()
+  data <- matrix_object$get()
+  if ((!is.na(inv_result)
+      && CorrectInversion(data,
+                          inv_result))) {
+    message("used cache data")
+    return (inv_result)
   } else {
-    inv_result<-tryCatch({solve(matrix_object)},
+    inv_result<-tryCatch({solve(data)},
                          error = function (err){print("non-invertible matrix!"); return(NA)})
     if (class(inv_result)!="matrix") {return (NA)}
-    
-    eval.parent(substitute(cache_object<-inv_result))
+    matrix_object$setinverse(inv_result)
     return (inv_result)
   }
 }
